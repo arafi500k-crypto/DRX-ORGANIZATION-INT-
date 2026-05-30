@@ -47,7 +47,25 @@ export default function App() {
         }
       }
     } catch (_) {}
-    return null;
+    
+    // Auto-create a unique persistent Guest user profile
+    const randomId = Math.floor(10000 + Math.random() * 90000);
+    const guestUser: User = {
+      username: `GUEST_${randomId}`,
+      mobile: "01685482525",
+      email: `guest_${randomId}@drx.com`,
+      passwordHash: "drx_guest_secure_pass_123_abc_xyz",
+      balance: 100, // Safe default starting balance
+      joinedCount: 0,
+      totalWon: 0,
+      isAdmin: false,
+      registeredAt: new Date().toISOString(),
+      joinedMatches: []
+    };
+    try {
+      localStorage.setItem("drx_saved_user", JSON.stringify(guestUser));
+    } catch (_) {}
+    return guestUser;
   });
   const [isRegistering, setIsRegistering] = useState(false);
   const [activeTab, setActiveTab] = useState<
@@ -230,6 +248,31 @@ export default function App() {
 
         // Also fetch their active transaction histories
         fetchClientTransactions(username);
+      } else {
+        // Silently auto-register if user not found on backend (e.g. server restarted or Vercel container refresh)
+        const defaultEmail = `${username.toLowerCase()}@drx.com`;
+        const defaultMobile = user?.mobile || "01685482525";
+        const defaultPassword = "drx_guest_secure_pass_123_abc_xyz";
+        
+        try {
+          const res = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: username,
+              email: defaultEmail,
+              mobile: defaultMobile,
+              password: defaultPassword,
+            }),
+          });
+          const regData = await res.json();
+          if (regData.success) {
+            setUser(regData.user);
+            localStorage.setItem("drx_saved_user", JSON.stringify(regData.user));
+          }
+        } catch (err) {
+          console.error("Silent register failure:", err);
+        }
       }
     } catch (e) {
       console.warn("User stats fetch error (background):", e);

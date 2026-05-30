@@ -1,0 +1,33 @@
+{
+  "users": [
+    {
+      "id": "admin_id",
+      "username": "admin",
+      "email": "admin@drx.com",
+      "mobile": "01685482525",
+      "passwordHash": "admin123",
+      "balance": 1000,
+      "joinedCount": 5,
+      "totalWon": 2500,
+      "isAdmin": true,
+      "registeredAt": "2026-05-29T12:00:00Z"
+    },
+    {
+      "id": "arafi_id",
+      "username": "ARAFI",
+      "email": "sazzadulislamarafi80@gmail.com",
+      "mobile": "01685482525",
+      "passwordHash": "ARAFI.COM",
+      "balance": 100,
+      "joinedCount": 0,
+      "totalWon": 0,
+      "isAdmin": true,
+      "registeredAt": "2026-05-29T12:04:00Z",
+      "joinedMatches": []
+    }
+  ],
+  "matches": [],
+  "deposits": [],
+  "withdrawals": [],
+  "adminPasswordHash": "1@2#3$4_5&6-7+8(9)0/"
+}

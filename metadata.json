@@ -1,0 +1,8 @@
+{
+  "name": "Remix: DRX ORGANIZATION INT.",
+  "description": "A secure eSports tournament platform for match registrations, admin-approved transactions, and real-time game management with live room details.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

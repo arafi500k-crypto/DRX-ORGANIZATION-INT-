@@ -6,20 +6,19 @@ import { BackendDB } from "./src/backend_db.js";
 // Make sure that the backend database is loaded and active
 BackendDB.load();
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
+const PORT = 3000;
 
-  // JSON parsing support
-  app.use(express.json());
+// JSON parsing support
+app.use(express.json());
 
-  // Log API requests for debugging
-  app.use((req, res, next) => {
-    console.log(`[API ${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
-  });
+// Log API requests for debugging
+app.use((req, res, next) => {
+  console.log(`[API ${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
 
-  // --- API ROUTES ---
+// --- API ROUTES ---
 
   // Auth
   app.post("/api/auth/register", (req, res) => {
@@ -294,11 +293,12 @@ async function startServer() {
   // --- VITE MIDDLEWARE SETUP ---
 
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+    createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
+    }).then((vite) => {
+      app.use(vite.middlewares);
     });
-    app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
@@ -307,9 +307,11 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server loaded on port ${PORT}`);
-  });
-}
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server loaded on port ${PORT}`);
+    });
+  }
 
-startServer();
+  export default app;
+

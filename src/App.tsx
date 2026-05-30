@@ -284,12 +284,9 @@ export default function App() {
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !regUsername.trim() ||
-      !regEmail.trim() ||
-      !regMobile.trim() ||
-      !regPassword.trim()
-    ) {
+    const cleanUsername = regUsername.trim();
+    const cleanMobile = regMobile.trim();
+    if (!cleanUsername || !cleanMobile) {
       addToast("ফর্মের সব ঘর সঠিকভাবে পূরণ করুন!", "error");
       return;
     }
@@ -297,31 +294,49 @@ export default function App() {
       addToast("অনুগ্রহ করে খেলার শর্তাবলীতে সম্মতি দিন!", "error");
       return;
     }
+
+    const defaultEmail = `${cleanUsername.toLowerCase()}@drx.com`;
+    const defaultPassword = "drx_guest_secure_pass_123_abc_xyz";
+
     try {
+      // First try to register
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: regUsername.trim(),
-          email: regEmail.trim(),
-          mobile: regMobile.trim(),
-          password: regPassword,
+          username: cleanUsername,
+          email: defaultEmail,
+          mobile: cleanMobile,
+          password: defaultPassword,
         }),
       });
       const data = await res.json();
       if (data.success) {
         setUser(data.user);
         localStorage.setItem("drx_saved_user", JSON.stringify(data.user));
-        addToast("অ্যাকাউন্ট তৈরি সফল হয়েছে!", "success");
-
-        // Reset registration fields
+        addToast("লগইন সফল হয়েছে!", "success");
         setRegUsername("");
-        setRegEmail("");
         setRegMobile("");
-        setRegPassword("");
-        setAgreeTerms(true);
       } else {
-        addToast("অ্যাকাউন্ট তৈরিতে সমস্যা: " + data.message, "error");
+        // If username is already taken, try logging them in!
+        const loginRes = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: cleanUsername,
+            password: defaultPassword,
+          }),
+        });
+        const loginData = await loginRes.json();
+        if (loginData.success) {
+          setUser(loginData.user);
+          localStorage.setItem("drx_saved_user", JSON.stringify(loginData.user));
+          addToast("স্বাগতম! আপনার অ্যাকাউন্টে ফিরে এসেছেন।", "success");
+          setRegUsername("");
+          setRegMobile("");
+        } else {
+          addToast("অ্যাকাউন্ট তৈরিতে সমস্যা: " + data.message, "error");
+        }
       }
     } catch (err: any) {
       addToast("নেটওয়ার্ক সমস্যা: " + err.message, "error");
@@ -803,180 +818,81 @@ export default function App() {
 
         {/* CORE SCREEN SWITCH INLINE */}
         {!user ? (
-          /* NOT LOGGED IN PAGES: LOGIN AND REGISTER */
-          <div className="flex-1 p-6 flex flex-col justify-center min-h-[85vh]">
+          /* SINGLE-PAGE PASSWORDLESS LOGIN & ONBOARDING SYSTEM */
+          <div className="flex-1 p-6 flex flex-col justify-center min-h-[85vh] animate-fadeIn">
             <div className="text-center mb-8 flex flex-col items-center">
               <DragonLogo size={110} />
-              <h2 className="text-white text-2xl font-bold font-display tracking-widest mt-4">
+              <h2 className="text-[#1e293b] text-2xl font-black font-display tracking-widest mt-4">
                 DRX ORGANIZATION
               </h2>
-              <p className="text-[10px] text-gray-400 font-mono tracking-widest uppercase mt-1">
-                Bengali custom pro sports app
+              <p className="text-[10px] text-gray-500 font-mono tracking-widest uppercase mt-1">
+                Bengali custom pro sports arena
               </p>
             </div>
 
-            {isRegistering ? (
-              /* SIGNUP WRAPPER CARD (Screenshot 7 styling layout) */
-              <div className="space-y-5 animate-fadeIn">
-                <div className="mb-2">
-                  <h3 className="text-white text-3xl font-extrabold tracking-tight font-display">
-                    Let's Start
-                  </h3>
-                  <p className="text-[#a1a1a9] text-xs mt-1">
-                    Create an account
-                  </p>
-                </div>
+            <div className="space-y-5">
+              <div className="mb-2 text-center">
+                <h3 className="text-gray-900 text-xl font-extrabold tracking-tight font-display">
+                  অ্যারেনায় প্রবেশ করুন (Enter Arena)
+                </h3>
+                <p className="text-gray-500 text-xs mt-1">
+                  আপনার নাম ও মোবাইল নম্বর দিয়ে গেম খেলা শুরু করুন!
+                </p>
+              </div>
 
-                <form onSubmit={handleRegisterSubmit} className="space-y-4">
-                  {/* Container card styling like the reference */}
-                  <div className="bg-[#1f1f23]/40 border border-gray-800 rounded-3xl p-6 space-y-4">
-                    <h4 className="text-center font-bold text-gray-400 text-lg uppercase mb-3 font-display">
-                      Sign Up
-                    </h4>
-
-                    <div className="space-y-3">
+              <form onSubmit={handleRegisterSubmit} className="space-y-4">
+                <div className="bg-white border border-gray-200 shadow-sm rounded-3xl p-6 space-y-4 font-sans text-gray-850">
+                  <div className="space-y-3.5">
+                    <div>
+                      <label className="text-[10px] text-gray-500 font-bold font-mono tracking-wider block mb-1 uppercase">
+                        ইউজারনেম / ডাকনাম (Username / Nickname) *
+                      </label>
                       <input
                         type="text"
                         value={regUsername}
                         onChange={(e) => setRegUsername(e.target.value)}
-                        placeholder="UserName"
-                        className="bg-[#121214] w-full p-3.5 px-4 rounded-xl border border-gray-800 text-sm text-gray-200 placeholder-gray-500 focus:border-red-500 outline-none transition-all"
+                        placeholder="যেমন: ARAFI_99"
+                        className="bg-gray-50 w-full p-3.5 px-4 rounded-xl border border-gray-200 text-sm text-gray-950 placeholder-gray-400 focus:border-sky-500 focus:bg-white outline-none transition-all font-semibold"
+                        required
                       />
+                    </div>
 
-                      <input
-                        type="email"
-                        value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
-                        placeholder="Email Address"
-                        className="bg-[#121214] w-full p-3.5 px-4 rounded-xl border border-gray-800 text-sm text-gray-200 placeholder-gray-500 focus:border-red-500 outline-none transition-all"
-                      />
-
+                    <div>
+                      <label className="text-[10px] text-gray-500 font-bold font-mono tracking-wider block mb-1 uppercase">
+                        মোবাইল নম্বর (bKash/Nagad Number) *
+                      </label>
                       <input
                         type="text"
                         value={regMobile}
                         onChange={(e) => setRegMobile(e.target.value)}
-                        placeholder="Mobile Number"
-                        className="bg-[#121214] w-full p-3.5 px-4 rounded-xl border border-gray-800 text-sm text-gray-200 placeholder-gray-500 focus:border-red-500 outline-none transition-all"
+                        placeholder="যেমন: 01685XXXXXX"
+                        className="bg-gray-50 w-full p-3.5 px-4 rounded-xl border border-gray-200 text-sm text-gray-950 placeholder-gray-400 focus:border-sky-500 focus:bg-white outline-none transition-all font-mono"
+                        required
                       />
-
-                      <div className="relative">
-                        <input
-                          type={showRegPass ? "text" : "password"}
-                          value={regPassword}
-                          onChange={(e) => setRegPassword(e.target.value)}
-                          placeholder="Password"
-                          className="bg-[#121214] w-full p-3.5 px-4 rounded-xl border border-gray-800 text-sm text-gray-200 placeholder-gray-500 focus:border-red-500 outline-none transition-all pr-12"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowRegPass(!showRegPass)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                        >
-                          {showRegPass ? (
-                            <EyeOff className="w-5 h-5" />
-                          ) : (
-                            <Eye className="w-5 h-5" />
-                          )}
-                        </button>
-                      </div>
                     </div>
-
-                    <label className="flex items-start gap-3 pt-2 text-xs text-gray-300 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={agreeTerms}
-                        onChange={(e) => setAgreeTerms(e.target.checked)}
-                        className="mt-0.5 w-4.5 h-4.5 accent-red-600 rounded"
-                      />
-                      <span className="leading-relaxed">
-                        I agree to the Terms and Conditions and Privacy Policy
-                      </span>
-                    </label>
                   </div>
 
-                  <button
-                    type="submit"
-                    className="w-full bg-[#D12053] hover:bg-[#b01642] text-white p-3.5 rounded-full text-sm font-bold tracking-wider transition-all transform active:scale-[0.98] duration-100 shadow-md font-display cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    Create Account
-                  </button>
-                </form>
-
-                <p className="text-center text-xs text-gray-450 pt-1 font-sans">
-                  Already have an account?{" "}
-                  <button
-                    onClick={() => setIsRegistering(false)}
-                    className="text-[#a1a1a9] font-bold underline ml-1 hover:text-white"
-                  >
-                    Sign In
-                  </button>
-                </p>
-              </div>
-            ) : (
-              /* LOGIN SUITE (Screenshot 8 styling layout) */
-              <div className="space-y-5 animate-fadeIn">
-                <div className="mb-2">
-                  <h3 className="text-white text-3xl font-extrabold tracking-tight font-display">
-                    Welcome Back
-                  </h3>
-                  <p className="text-[#a1a1a9] text-xs mt-1">
-                    Sign in to your account
-                  </p>
+                  <label className="flex items-start gap-3 pt-2 text-xs text-gray-650 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={agreeTerms}
+                      onChange={(e) => setAgreeTerms(e.target.checked)}
+                      className="mt-0.5 w-4.5 h-4.5 accent-sky-600 rounded"
+                    />
+                    <span className="leading-relaxed">
+                      আমি খেলার নিয়মাবলী এবং শর্তাবলীতে সম্মত আছি (I agree to rules)
+                    </span>
+                  </label>
                 </div>
 
-                <form onSubmit={handleLoginSubmit} className="space-y-4">
-                  <div className="bg-[#1f1f23]/40 border border-gray-800 rounded-3xl p-6 space-y-4">
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        value={loginUsername}
-                        onChange={(e) => setLoginUsername(e.target.value)}
-                        placeholder="UserName"
-                        className="bg-[#121214] w-full p-3.5 px-4 rounded-xl border border-gray-800 text-sm text-gray-200 placeholder-gray-500 focus:border-red-500 outline-none transition-all"
-                      />
-
-                      <div className="relative">
-                        <input
-                          type={showLoginPass ? "text" : "password"}
-                          value={loginPassword}
-                          onChange={(e) => setLoginPassword(e.target.value)}
-                          placeholder="Password"
-                          className="bg-[#121214] w-full p-3.5 px-4 rounded-xl border border-gray-800 text-sm text-gray-200 placeholder-gray-500 focus:border-red-500 outline-none transition-all pr-12"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowLoginPass(!showLoginPass)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                        >
-                          {showLoginPass ? (
-                            <EyeOff className="w-5 h-5" />
-                          ) : (
-                            <Eye className="w-5 h-5" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-[#18181c] hover:bg-[#232328] text-white p-3.5 rounded-full text-sm font-bold tracking-wider transition-transform transform active:scale-95 duration-100 shadow-md font-display"
-                  >
-                    Sign In
-                  </button>
-                </form>
-
-                <p className="text-center text-xs text-gray-455 pt-4 font-sans">
-                  I'm a new user.{" "}
-                  <button
-                    onClick={() => setIsRegistering(true)}
-                    className="text-[#a1a1a9] font-bold underline ml-1 hover:text-white"
-                  >
-                    Register
-                  </button>
-                </p>
-              </div>
-            )}
+                <button
+                  type="submit"
+                  className="w-full bg-[#D12053] hover:bg-[#b01642] text-white p-4 rounded-full text-xs font-black tracking-widest transition-all transform active:scale-[0.98] duration-100 shadow-md font-display cursor-pointer flex items-center justify-center gap-2 uppercase"
+                >
+                  ENTER THE ARENA (প্রবেশ করুন)
+                </button>
+              </form>
+            </div>
           </div>
         ) : (
           /* LOGGED IN CORE PLATFORM */
@@ -1717,17 +1633,11 @@ export default function App() {
                       <span className="text-xs text-gray-500">→</span>
                     </button>
 
-                    <div className="pt-6">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full bg-[#D12053] hover:bg-[#b01844] text-white p-3.5 rounded-full text-xs font-bold tracking-wider transition-all flex items-center justify-center gap-2 shadow-md uppercase font-display"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Logout
-                      </button>
+                    <div className="pt-2 text-center text-[10px] text-gray-400 font-mono">
+                      YOUR DATA IS PERMANENTLY SAVED ON THIS DEVICE
                     </div>
 
-                    <div className="pt-4 text-center">
+                    <div className="pt-1 text-center">
                       <button
                         onClick={() => setShowAdminAuthModal(true)}
                         className="text-[10.5px] text-gray-500 hover:text-gray-300 font-mono tracking-wider transition-colors cursor-pointer"
@@ -1829,95 +1739,6 @@ export default function App() {
                         </div>
                       </div>
                     </div>
-
-                    {/* Password change form (Matches spec) */}
-                    <form
-                      onSubmit={handlePasswordChangeSubmit}
-                      className="bg-[#1f1f23]/45 border border-gray-800 rounded-3xl p-6 space-y-4"
-                    >
-                      <div className="flex items-center gap-2 text-gray-300 font-bold border-b border-gray-800 pb-2 mb-2 text-xs">
-                        <Lock className="w-4 h-4 text-gray-400" />
-                        Password Change
-                      </div>
-
-                      <div className="space-y-3 font-mono">
-                        <div className="relative">
-                          <input
-                            type={showOldPass ? "text" : "password"}
-                            value={currentPasswordInput}
-                            onChange={(e) =>
-                              setCurrentPasswordInput(e.target.value)
-                            }
-                            placeholder="Current Password"
-                            className="bg-[#121214] w-full p-3 px-4 rounded-xl border border-gray-850 text-xs text-gray-200 focus:border-red-500 outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowOldPass(!showOldPass)}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                          >
-                            {showOldPass ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-
-                        <div className="relative">
-                          <input
-                            type={showNewPass ? "text" : "password"}
-                            value={newPasswordInput}
-                            onChange={(e) =>
-                              setNewPasswordInput(e.target.value)
-                            }
-                            placeholder="New Password"
-                            className="bg-[#121214] w-full p-3 px-4 rounded-xl border border-gray-850 text-xs text-gray-200 focus:border-red-500 outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowNewPass(!showNewPass)}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                          >
-                            {showNewPass ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-
-                        <div className="relative">
-                          <input
-                            type={showConfirmPass ? "text" : "password"}
-                            value={confirmPasswordInput}
-                            onChange={(e) =>
-                              setConfirmPasswordInput(e.target.value)
-                            }
-                            placeholder="Confirm Password"
-                            className="bg-[#121214] w-full p-3 px-4 rounded-xl border border-gray-850 text-xs text-gray-200 focus:border-red-500 outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowConfirmPass(!showConfirmPass)}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                          >
-                            {showConfirmPass ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="w-full bg-[#18181c] hover:bg-[#232328] text-white p-3 rounded-xl text-xs font-bold transition uppercase tracking-wider font-display border border-gray-800"
-                      >
-                        Change Password
-                      </button>
-                    </form>
                   </div>
                 )}
 

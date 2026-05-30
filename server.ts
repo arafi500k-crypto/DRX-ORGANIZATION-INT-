@@ -1,6 +1,5 @@
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 import { BackendDB } from "./src/backend_db.js";
 
 // Make sure that the backend database is loaded and active
@@ -293,11 +292,13 @@ app.use((req, res, next) => {
   // --- VITE MIDDLEWARE SETUP ---
 
   if (process.env.NODE_ENV !== "production") {
-    createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    }).then((vite) => {
-      app.use(vite.middlewares);
+    import("vite").then(({ createServer: createViteServer }) => {
+      createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      }).then((vite) => {
+        app.use(vite.middlewares);
+      });
     });
   } else {
     const distPath = path.join(process.cwd(), "dist");

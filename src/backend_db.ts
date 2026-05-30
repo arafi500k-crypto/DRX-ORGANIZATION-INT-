@@ -2,7 +2,31 @@ import fs from "fs";
 import path from "path";
 
 // Paths and Types
-const DB_FILE = path.join(process.cwd(), "db_storage.json");
+let DB_FILE = path.join(process.cwd(), "db_storage.json");
+
+// On Vercel, the file system is read-only, but /tmp is writable.
+if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  const tmpPath = path.join("/tmp", "db_storage.json");
+  try {
+    if (!fs.existsSync(tmpPath)) {
+      if (fs.existsSync(DB_FILE)) {
+        fs.writeFileSync(tmpPath, fs.readFileSync(DB_FILE, "utf-8"), "utf-8");
+      } else {
+        const initialDB = {
+          users: [],
+          matches: [],
+          deposits: [],
+          withdrawals: [],
+          adminPasswordHash: "1@2#3$4_5&6-7+8(9)0/"
+        };
+        fs.writeFileSync(tmpPath, JSON.stringify(initialDB), "utf-8");
+      }
+    }
+    DB_FILE = tmpPath;
+  } catch (err) {
+    console.error("Vercel /tmp DB path initialization failed:", err);
+  }
+}
 
 export interface MatchRegistration {
   matchId: string;

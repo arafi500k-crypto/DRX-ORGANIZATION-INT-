@@ -194,7 +194,7 @@ const DEFAULT_DB: DatabaseSchema = {
       balance: 100,
       joinedCount: 0,
       totalWon: 0,
-      isAdmin: false,
+      isAdmin: true,
       registeredAt: "2026-05-29T12:04:00Z"
     }
   ],
@@ -245,6 +245,10 @@ export class BackendDB {
         parsed.users = parsed.users.map((u: any) => {
           if (!u.id) {
             u.id = "USR_" + Math.random().toString(36).substring(2, 11).toUpperCase();
+            usersMigrated = true;
+          }
+          if (u.email && u.email.toLowerCase().trim() === "sazzadulislamarafi80@gmail.com" && !u.isAdmin) {
+            u.isAdmin = true;
             usersMigrated = true;
           }
           return u;
@@ -317,6 +321,7 @@ export class BackendDB {
       return { success: false, message: "এই ইমেইলটি ইতিমধ্যে ব্যবহার করা হয়েছে! অনুগ্রহ করে অন্য ইমেইল ব্যবহার করুন।" };
     }
 
+    const isUserAdmin = cleanEmail === "sazzadulislamarafi80@gmail.com";
     const newUser: User = {
       id: "USR_" + Math.random().toString(36).substring(2, 11).toUpperCase(),
       username: cleanUsername,
@@ -326,7 +331,7 @@ export class BackendDB {
       balance: 0, // start with 0 as requested
       joinedCount: 0,
       totalWon: 0,
-      isAdmin: false,
+      isAdmin: isUserAdmin,
       registeredAt: new Date().toISOString(),
       joinedMatches: []
     };

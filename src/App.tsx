@@ -15,7 +15,6 @@ import {
   User as UserIcon,
   Wallet as WalletIcon,
   Key,
-  ShieldAlert,
   Check,
   Copy,
   Eye,
@@ -137,8 +136,6 @@ export default function App() {
 
   // Admin Overlay Access Gate
   const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const [showAdminAuthModal, setShowAdminAuthModal] = useState(false);
-  const [adminGatePassword, setAdminGatePassword] = useState("");
 
   // Transactions logs
   const [clientDeposits, setClientDeposits] = useState<DepositRequest[]>([]);
@@ -568,35 +565,7 @@ export default function App() {
     }
   };
 
-  // Admin access validation
-  const handleAdminGateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!adminGatePassword) return;
-    try {
-      const response = await fetch("/api/admin/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          password: adminGatePassword,
-          username: user?.username,
-        }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setShowAdminAuthModal(false);
-        setAdminGatePassword("");
-        setShowAdminPanel(true);
-        addToast("এডমিন কন্ট্রোল প্যানেল সমর্থিত!", "success");
-        if (user) {
-          fetchAndSyncUserData(user.username);
-        }
-      } else {
-        addToast("ভুল এডমিন পাসওয়ার্ড!", "error");
-      }
-    } catch (err: any) {
-      addToast("নেটওয়ার্ক সমস্যা: " + err.message, "error");
-    }
-  };
+
 
   // Click Copy helper
   const handleCopyToClipboard = (text: string) => {
@@ -703,10 +672,13 @@ export default function App() {
               LIVE FEED
             </span>
 
-            {/* Admin Console Gate key (Only visible to admin users) */}
-            {user && user.isAdmin && (
+            {/* Admin Console Gate key (Only visible to specifically allowed email) */}
+            {user && user.email && user.email.toLowerCase().trim() === "sazzadulislamarafi80@gmail.com" && (
               <button
-                onClick={() => setShowAdminPanel(true)}
+                onClick={() => {
+                  setShowAdminPanel(true);
+                  addToast("স্বাগতম এডমিন!", "success");
+                }}
                 className="p-1 px-2.5 rounded bg-red-600/10 border border-red-500/20 text-red-500 hover:text-white hover:bg-red-600/80 font-mono text-[10px] font-bold tracking-wider uppercase transition-all"
                 title="Open admin panel"
               >
@@ -716,53 +688,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* ADMIN AUTH SECRET PASS MODAL CARD */}
-        {showAdminAuthModal && (
-          <div className="fixed inset-0 bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 w-full max-w-xs space-y-4">
-              <div className="flex flex-col items-center gap-2 text-center">
-                <ShieldAlert className="w-10 h-10 text-red-500 animate-pulse" />
-                <h3 className="font-display font-bold text-lg text-white">
-                  Console Authorization
-                </h3>
-                <p className="text-[10px] font-sans text-gray-400">
-                  Enter master password to access
-                  administrator dashboards
-                </p>
-              </div>
 
-              <form onSubmit={handleAdminGateSubmit} className="space-y-3">
-                <input
-                  type="password"
-                  value={adminGatePassword}
-                  onChange={(e) => setAdminGatePassword(e.target.value)}
-                  placeholder="Master Secret Code"
-                  className="bg-slate-900 w-full p-2.5 px-3 rounded border border-gray-700 text-xs font-mono text-white text-center focus:border-red-500 transition-colors"
-                  autoFocus
-                />
-
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-red-600 hover:bg-red-700 p-2 text-xs font-bold text-white uppercase rounded transition"
-                  >
-                    AUTHORIZE
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAdminAuthModal(false);
-                      setAdminGatePassword("");
-                    }}
-                    className="px-3 bg-gray-800 hover:bg-gray-700 p-2 text-xs font-bold text-gray-400 rounded transition"
-                  >
-                    CLOSE
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
 
         {/* CUSTOM GAME REGISTRATION MODAL WITH IDENTIFIERS (UID & INGAME NAME) */}
         {joiningMatch && (
@@ -1680,14 +1606,19 @@ export default function App() {
                       YOUR DATA IS PERMANENTLY SAVED ON THIS DEVICE
                     </div>
 
-                    <div className="pt-1 text-center">
-                      <button
-                        onClick={() => setShowAdminAuthModal(true)}
-                        className="text-[10.5px] text-gray-500 hover:text-gray-300 font-mono tracking-wider transition-colors cursor-pointer"
-                      >
-                        admin panel (Only admin and Modaretor Access)
-                      </button>
-                    </div>
+                    {user && user.email && user.email.toLowerCase().trim() === "sazzadulislamarafi80@gmail.com" && (
+                      <div className="pt-2 text-center animate-fadeIn">
+                        <button
+                          onClick={() => {
+                            setShowAdminPanel(true);
+                            addToast("স্বাগতম এডমিন!", "success");
+                          }}
+                          className="px-4 py-2 hover:bg-red-700 bg-[#D12053] rounded-xl text-[10.5px] text-white font-extrabold font-mono tracking-wider transition-colors cursor-pointer inline-flex items-center gap-1.5 uppercase shadow-md"
+                        >
+                          OPEN MASTER ADMIN PANEL
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : null}
 
